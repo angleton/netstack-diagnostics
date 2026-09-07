@@ -6,6 +6,7 @@
 
 use etherparse::{
     EtherType, Ethernet2Header, Icmpv4Header, Icmpv4Type, IpNumber, Ipv4Header, TcpHeader,
+    UdpHeader,
     icmpv4::{DestUnreachableHeader, TimeExceededCode},
 };
 
@@ -72,6 +73,36 @@ pub fn tcp_reset() -> Vec<u8> {
     tcp_ip_frame(true, false, 64)
 }
 
+fn udp_ip_frame(corrupt_checksum: bool) -> Vec<u8> {
+    let payload = b"datagram";
+    let mut ip = Ipv4Header::new(
+        (UdpHeader::LEN + payload.len()) as u16,
+        64,
+        IpNumber::UDP,
+        SRC_IP,
+        DST_IP,
+    )
+    .unwrap();
+    ip.header_checksum = ip.calc_header_checksum();
+
+    let mut udp = UdpHeader::with_ipv4_checksum(53000, 53, &ip, payload).unwrap();
+    if corrupt_checksum {
+        udp.checksum ^= 0xFFFF;
+    }
+
+    let mut transport = udp.to_bytes().to_vec();
+    transport.extend_from_slice(payload);
+    frame(&ip, &transport)
+}
+
+pub fn healthy_udp() -> Vec<u8> {
+    udp_ip_frame(false)
+}
+
+pub fn bad_udp_checksum() -> Vec<u8> {
+    udp_ip_frame(true)
+}
+
 fn icmp_frame(icmp_type: Icmpv4Type) -> Vec<u8> {
     // Payload: a stand-in for "internet header + 64 bits of original datagram".
     let payload = [0u8; 28];
@@ -116,6 +147,8 @@ pub fn by_name(name: &str) -> Option<Vec<u8>> {
         "bad_ip_checksum" => Some(bad_ip_checksum()),
         "ttl_expired" => Some(ttl_expired()),
         "tcp_reset" => Some(tcp_reset()),
+        "healthy_udp" => Some(healthy_udp()),
+        "bad_udp_checksum" => Some(bad_udp_checksum()),
         "icmp_port_unreachable" => Some(icmp_port_unreachable()),
         "icmp_time_exceeded" => Some(icmp_time_exceeded()),
         "truncated_frame" => Some(truncated_frame()),

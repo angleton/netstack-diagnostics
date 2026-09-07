@@ -23,6 +23,16 @@ Feature: Bottom-up packet diagnosis
     When the capture is analyzed
     Then the diagnosis is "Layer4ConnectionReset"
 
+  Scenario: A healthy UDP datagram is accepted without TCP connection state
+    Given a packet capture containing a "healthy_udp" packet
+    When the capture is analyzed
+    Then the diagnosis is "Healthy"
+
+  Scenario: A corrupted UDP checksum is caught at layer 4
+    Given a packet capture containing a "bad_udp_checksum" packet
+    When the capture is analyzed
+    Then the diagnosis is "Layer4ChecksumInvalid"
+
   Scenario: An ICMP destination unreachable message is recognized
     Given a packet capture containing a "icmp_port_unreachable" packet
     When the capture is analyzed
