@@ -31,6 +31,14 @@ cargo run -- path\to\capture.pcap
 Prints a per-packet diagnosis for every record in a classic (libpcap format)
 capture file.
 
+Generate a deterministic sample capture containing every diagnostic scenario,
+then analyze it:
+
+```powershell
+cargo run -- --generate-sample sample-diagnostics.pcap
+cargo run -- sample-diagnostics.pcap
+```
+
 ## Tests
 
 ```powershell

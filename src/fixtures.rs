@@ -10,6 +10,8 @@ use etherparse::{
     icmpv4::{DestUnreachableHeader, TimeExceededCode},
 };
 
+use crate::pcap::write_pcap_file;
+
 const SRC_MAC: [u8; 6] = [0x02, 0x00, 0x00, 0x00, 0x00, 0x01];
 const DST_MAC: [u8; 6] = [0x02, 0x00, 0x00, 0x00, 0x00, 0x02];
 const SRC_IP: [u8; 4] = [10, 0, 0, 1];
@@ -140,6 +142,27 @@ pub fn truncated_frame() -> Vec<u8> {
     vec![0xAA; 6]
 }
 
+/// Builds a deterministic classic pcap containing every diagnostic scenario.
+pub fn sample_capture() -> Vec<u8> {
+    let packets = [
+        healthy_tcp(),
+        bad_ip_checksum(),
+        ttl_expired(),
+        tcp_reset(),
+        healthy_udp(),
+        bad_udp_checksum(),
+        icmp_port_unreachable(),
+        icmp_time_exceeded(),
+        truncated_frame(),
+    ];
+    let records: Vec<_> = packets
+        .iter()
+        .enumerate()
+        .map(|(index, packet)| (index as u32, 0, packet.as_slice()))
+        .collect();
+    write_pcap_file(&records)
+}
+
 /// Looks up a named fixture, for use from feature-file step definitions.
 pub fn by_name(name: &str) -> Option<Vec<u8>> {
     match name {
@@ -153,5 +176,38 @@ pub fn by_name(name: &str) -> Option<Vec<u8>> {
         "icmp_time_exceeded" => Some(icmp_time_exceeded()),
         "truncated_frame" => Some(truncated_frame()),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        diagnosis::{Diagnosis, diagnose},
+        pcap::PcapFile,
+    };
+
+    use super::sample_capture;
+
+    #[test]
+    fn sample_capture_exercises_every_diagnosis_scenario() {
+        let capture = sample_capture();
+        let diagnoses: Vec<_> = PcapFile::parse(&capture)
+            .unwrap()
+            .records()
+            .map(|record| diagnose(record.unwrap().data))
+            .collect();
+
+        assert!(matches!(diagnoses[0], Diagnosis::Healthy));
+        assert!(matches!(diagnoses[1], Diagnosis::Layer3ChecksumInvalid));
+        assert!(matches!(diagnoses[2], Diagnosis::Layer3TtlExpired));
+        assert!(matches!(diagnoses[3], Diagnosis::Layer4ConnectionReset));
+        assert!(matches!(diagnoses[4], Diagnosis::Healthy));
+        assert!(matches!(diagnoses[5], Diagnosis::Layer4ChecksumInvalid));
+        assert!(matches!(
+            diagnoses[6],
+            Diagnosis::Layer4DestinationUnreachable { icmp_code: 3 }
+        ));
+        assert!(matches!(diagnoses[7], Diagnosis::Layer3TimeExceededEnRoute));
+        assert!(matches!(diagnoses[8], Diagnosis::Layer2Malformed(_)));
     }
 }
