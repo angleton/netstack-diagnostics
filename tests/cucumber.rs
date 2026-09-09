@@ -41,6 +41,60 @@ async fn then_diagnosis(world: &mut DiagnosisWorld, expected: String) {
     assert_eq!(actual_name, expected);
 }
 
+#[then(expr = "the icmp code is {int}")]
+async fn then_icmp_code(world: &mut DiagnosisWorld, expected: u8) {
+    match world.diagnosis.as_ref() {
+        Some(Diagnosis::Layer4DestinationUnreachable { icmp_code }) => {
+            assert_eq!(*icmp_code, expected);
+        }
+        other => panic!("expected Layer4DestinationUnreachable, got {other:?}"),
+    }
+}
+
+#[then(expr = "the ether type is {int}")]
+async fn then_ether_type(world: &mut DiagnosisWorld, expected: u16) {
+    match world.diagnosis.as_ref() {
+        Some(Diagnosis::Layer2UnknownEtherType(ether_type)) => {
+            assert_eq!(*ether_type, expected);
+        }
+        other => panic!("expected Layer2UnknownEtherType, got {other:?}"),
+    }
+}
+
+#[then(expr = "the diagnosis message contains {string}")]
+async fn then_diagnosis_message_contains(world: &mut DiagnosisWorld, expected: String) {
+    match world.diagnosis.as_ref() {
+        Some(Diagnosis::Layer2Malformed(message)) => {
+            assert!(
+                message.contains(&expected),
+                "expected message to contain {expected:?}, got {message:?}"
+            );
+        }
+        other => panic!("expected Layer2Malformed, got {other:?}"),
+    }
+}
+
+#[then(expr = "the spi is {int}")]
+async fn then_spi(world: &mut DiagnosisWorld, expected: u32) {
+    match world.diagnosis.as_ref() {
+        Some(Diagnosis::Layer3EspTraffic { spi, .. }) => assert_eq!(*spi, expected),
+        other => panic!("expected Layer3EspTraffic, got {other:?}"),
+    }
+}
+
+#[then(expr = "the certificate subject contains {string}")]
+async fn then_certificate_subject_contains(world: &mut DiagnosisWorld, expected: String) {
+    match world.diagnosis.as_ref() {
+        Some(Diagnosis::Layer4IkeCertificateIdentity { subject }) => {
+            assert!(
+                subject.contains(&expected),
+                "expected subject to contain {expected:?}, got {subject:?}"
+            );
+        }
+        other => panic!("expected Layer4IkeCertificateIdentity, got {other:?}"),
+    }
+}
+
 fn main() {
     futures::executor::block_on(DiagnosisWorld::run("tests/features"));
 }
