@@ -2,9 +2,12 @@ use std::{env, fs, process};
 
 use netstack_diagnostics::{diagnosis::diagnose, fixtures::sample_capture, pcap::PcapFile};
 
+const DEFAULT_PCAP_PATH: &str = "pcaps/sample.pcap";
+
 fn main() {
     let arguments: Vec<_> = env::args().skip(1).collect();
     let path = match arguments.as_slice() {
+        [] => &DEFAULT_PCAP_PATH.to_string(),
         [path] => path,
         [command, path] if command == "--generate-sample" => {
             fs::write(path, sample_capture()).unwrap_or_else(|e| {
@@ -15,7 +18,7 @@ fn main() {
             return;
         }
         _ => {
-            eprintln!("usage: netstack-diagnostics <path-to-pcap-file>");
+            eprintln!("usage: netstack-diagnostics [path-to-pcap-file]");
             eprintln!("       netstack-diagnostics --generate-sample <output.pcap>");
             process::exit(2);
         }
