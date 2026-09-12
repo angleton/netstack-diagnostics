@@ -2,7 +2,7 @@ use std::{env, fs, process};
 
 use netstack_diagnostics::{diagnosis::diagnose, fixtures::sample_capture, pcap::PcapFile};
 
-const DEFAULT_PCAP_PATH: &str = "pcaps/sample.pcap";
+const DEFAULT_PCAP_PATH: &str = "pcaps/wikipedia.pcap";
 
 fn main() {
     let arguments: Vec<_> = env::args().skip(1).collect();
