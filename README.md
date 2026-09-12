@@ -31,13 +31,17 @@ cargo run -- path\to\capture.pcap
 Prints a per-packet diagnosis for every record in a classic (libpcap format)
 capture file.
 
-Generate a deterministic sample capture containing every diagnostic scenario,
-then analyze it:
+Generate a deterministic sample capture containing one packet for every
+scenario in `tests/features/diagnosis.feature`, then analyze it:
 
 ```powershell
-cargo run -- --generate-sample sample-diagnostics.pcap
-cargo run -- sample-diagnostics.pcap
+cargo run -- --generate-sample pcaps/diagnosis-scenarios.pcap
+cargo run -- pcaps/diagnosis-scenarios.pcap
 ```
+
+The records are written in the same order as the scenarios in the feature
+file, including the deliberately malformed, unknown EtherType, ESP, and IKE
+examples.
 
 ## Tests
 

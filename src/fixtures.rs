@@ -281,6 +281,10 @@ pub fn sample_capture() -> Vec<u8> {
         icmp_port_unreachable(),
         icmp_time_exceeded(),
         truncated_frame(),
+        unknown_ether_type(),
+        esp_traffic(),
+        ike_sa_init(),
+        ike_auth_with_certificate(),
     ];
     let records: Vec<_> = packets
         .iter()
@@ -328,6 +332,7 @@ mod tests {
             .map(|record| diagnose(record.unwrap().data))
             .collect();
 
+        assert_eq!(diagnoses.len(), 13);
         assert!(matches!(diagnoses[0], Diagnosis::Healthy));
         assert!(matches!(diagnoses[1], Diagnosis::Layer3ChecksumInvalid));
         assert!(matches!(diagnoses[2], Diagnosis::Layer3TtlExpired));
@@ -340,5 +345,22 @@ mod tests {
         ));
         assert!(matches!(diagnoses[7], Diagnosis::Layer3TimeExceededEnRoute));
         assert!(matches!(diagnoses[8], Diagnosis::Layer2Malformed(_)));
+        assert!(matches!(
+            diagnoses[9],
+            Diagnosis::Layer2UnknownEtherType(2114)
+        ));
+        assert!(matches!(
+            diagnoses[10],
+            Diagnosis::Layer3EspTraffic {
+                spi: 0x1234_5678,
+                sequence: 1
+            }
+        ));
+        assert!(matches!(diagnoses[11], Diagnosis::Layer4IkeHandshake { .. }));
+        assert!(matches!(
+            diagnoses[12],
+            Diagnosis::Layer4IkeCertificateIdentity { ref subject }
+                if subject.contains("vpn-gateway.example.com")
+        ));
     }
 }
