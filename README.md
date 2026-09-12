@@ -35,8 +35,8 @@ Generate a deterministic sample capture containing one packet for every
 scenario in `tests/features/diagnosis.feature`, then analyze it:
 
 ```powershell
-cargo run -- --generate-sample pcaps/diagnosis-scenarios.pcap
-cargo run -- pcaps/diagnosis-scenarios.pcap
+cargo run -- --generate-sample pcaps/master.pcap
+cargo run -- pcaps/master.pcap
 ```
 
 The records are written in the same order as the scenarios in the feature
